@@ -1,0 +1,41 @@
+###
+GET http://localhost:3000/tickets
+
+###
+GET http://localhost:3000/tickets/1
+
+###
+GET http://localhost:3000/tickets/999
+
+###
+POST http://localhost:3000/tickets
+Content-Type: application/json
+
+{
+  "owner": "Алексей Смирнов",
+  "numbers": [7, 14, 21, 28, 35, 42]
+}
+
+###
+POST http://localhost:3000/tickets
+Content-Type: application/json
+
+{
+  "owner": "Мария Петрова"
+}
+
+###
+PUT http://localhost:3000/tickets/1
+Content-Type: application/json
+
+{
+  "owner": "Иван Иванов",
+  "numbers": [3, 10, 15, 22, 30, 45],
+  "status": "winner"
+}
+
+###
+DELETE http://localhost:3000/tickets/2
+
+###
+DELETE http://localhost:3000/tickets/999
