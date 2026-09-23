@@ -1,0 +1,17 @@
+# Зависимости
+node_modules/
+
+# Логи
+npm-debug.log*
+logs/
+*.log
+
+# Переменные окружения
+.env
+.env.local
+
+# Служебные файлы редакторов и ОС
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
