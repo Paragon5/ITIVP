@@ -86,3 +86,75 @@ POST http://localhost:3000/tickets
 Content-Type: application/json
 
 { "owner": "Битый JSON", }
+
+### === ЛР №3: Аутентификация и авторизация ===
+
+### 15. Регистрация (201)
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{
+  "email": "user@test.ru",
+  "password": "Passw0rd!"
+}
+
+### 16. Регистрация дубликата (409)
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{
+  "email": "user@test.ru",
+  "password": "Another123!"
+}
+
+### 17. Регистрация без полей (400)
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{}
+
+### 18. Вход (200, возвращает token)
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@test.ru",
+  "password": "Passw0rd!"
+}
+
+### 19. Вход с неверным паролем (401, remainingAttempts)
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@test.ru",
+  "password": "wrong"
+}
+
+### 20. 5 неудачных попыток -> блокировка (423, повторить 5 раз)
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@test.ru",
+  "password": "wrong"
+}
+
+### 21. Профиль с токеном (200)
+GET http://localhost:3000/profile
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJ1c2VyQHRlc3QucnUiLCJpYXQiOjE3OTEzMjc5MzgsImV4cCI6MTc5MTMzMTUzOH0.6bwrKn25H-j49X3HmEnTrjX2IgZE7ykAz2rDIAAd-aw
+
+### 22. Профиль без токена (401)
+GET http://localhost:3000/profile
+
+### 23. Профиль с битым токеном (401)
+GET http://localhost:3000/profile
+Authorization: Bearer bad.token.here
+
+### 24. Удаление билета без токена (401)
+DELETE http://localhost:3000/tickets/999
+
+### 25. Удаление билета с токеном (404 = прошёл авторизацию, билета нет)
+DELETE http://localhost:3000/tickets/999
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJ1c2VyQHRlc3QucnUiLCJpYXQiOjE3OTEzMjc5MzgsImV4cCI6MTc5MTMzMTUzOH0.6bwrKn25H-j49X3HmEnTrjX2IgZE7ykAz2rDIAAd-aw
+

@@ -1,12 +1,34 @@
 require('dotenv').config();
 
 const express = require('express');
-const { Ticket } = require('./models');
+const { Ticket, User } = require('./models');
+const auth = require('./middleware/auth');
 
 const app = express();
 const PORT = 3000;
 
 app.use(express.json());
+
+
+// --- Аутентификация и авторизация (ЛР №3) ---
+app.use('/auth', require('./routes/auth'));
+
+// Текущий пользователь — только для авторизованных
+app.get('/profile', auth, async (req, res) => {
+    const user = await User.findByPk(req.user.id);
+
+    if (!user) {
+        return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    res.status(200).json({
+        id: user.id,
+        email: user.email,
+        createdAt: user.createdAt
+    });
+});
+
+// Пример защищённого маршрута: удаление билета только авторизованными
 
 
 let statuses = ['active', 'winner', 'expired'];
@@ -138,7 +160,7 @@ app.put('/tickets/:id', async (req, res) => {
     res.status(200).json(updated);
 });
 
-app.delete('/tickets/:id', async (req, res) => {
+app.delete('/tickets/:id', auth, async (req, res) => {
     const id = parseInt(req.params.id);
     const ticket = Number.isNaN(id) ? null : await Ticket.findByPk(id);
 
