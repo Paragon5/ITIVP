@@ -39,23 +39,39 @@ export default function TicketList() {
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
   const saveTimer = useRef(null);
+  const isLoaded = useRef(false); // данные уже загружены из localStorage
 
+  // Эффект 1: загрузка из localStorage при монтировании (+ имитация загрузки 1 с)
   useEffect(() => {
     const timer = setTimeout(() => {
       try {
         const raw = localStorage.getItem(TICKETS_STORAGE_KEY);
-        const data = raw ? JSON.parse(raw) : INITIAL_TICKETS;
-        setTickets(Array.isArray(data) && data.length > 0 ? data : INITIAL_TICKETS);
+        const data = raw ? JSON.parse(raw) : null;
+        if (Array.isArray(data) && data.length > 0) {
+          setTickets(data);
+        } else {
+          setTickets(INITIAL_TICKETS);
+          // Сохраняем начальные данные, если хранилище было пустым
+          if (!raw) {
+            localStorage.setItem(TICKETS_STORAGE_KEY, JSON.stringify(INITIAL_TICKETS));
+          }
+        }
       } catch {
         setTickets(INITIAL_TICKETS);
       } finally {
         setLoading(false);
+        isLoaded.current = true;
       }
     }, 1000);
     return () => clearTimeout(timer);
   }, []);
 
+  // Эффект 2: автосохранение в localStorage с debounce 500 мс
   useEffect(() => {
+    // Не сохраняем пустой начальный статус до завершения загрузки,
+    // иначе перезапишем существующие данные в localStorage пустым массивом
+    if (!isLoaded.current && tickets.length === 0) return;
+
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       try {
@@ -67,8 +83,9 @@ export default function TicketList() {
       }
     }, 500);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
-  }, [tickets]);
+  }, [tickets, isLoaded]);
 
+  // Эффект 3: изменение заголовка страницы в зависимости от количества билетов
   useEffect(() => {
     const total = tickets.length;
     document.title = total > 0 ? `Лотерейные билеты (${total})` : 'Лотерейные билеты';
