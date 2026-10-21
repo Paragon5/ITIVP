@@ -1,16 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 
-/**
- * Пользовательский хук useLocalStorage.
- *
- * В оригинальной реализации useEffect сохранял null, потому что срабатывал
- * раньше ленивой инициализации useState и доступа к localStorage. В React 19
- * на Windows-сERVER-х корректный паттерн — ленивая инициализация и явный
- * useCallback для save, который выполняется только после первого рендера.
- *
- * `save` — функция, которая произвольный объект переносит в localStorage.
- * Для пагинации и чистки используется отдельный export clearStorage(key).
-/
 export function useLocalStorage(key, initialValue) {
   const [value, setValue] = useState(() => {
     try {
@@ -27,7 +16,7 @@ export function useLocalStorage(key, initialValue) {
         window.localStorage.setItem(key, JSON.stringify(nextValue));
         if (cb) cb();
       } catch (err) {
-        console.error("useLocalStorage.save: не удалось сохранить", err);
+        console.error("useLocalStorage.save: ", err);
         if (cb) cb(err);
       }
     },
@@ -48,6 +37,6 @@ export function isEmptyPage(arr) {
 export function clearStorage(key) {
   try {
   } catch (err) {
-    console.error("clearStorage: не удалось очистить", err);
+    console.error("clearStorage: ", err);
   }
 }

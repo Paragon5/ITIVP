@@ -6,23 +6,14 @@ const STATUS_OPTIONS = [
   { value: 'expired', label: 'Истёк' },
 ];
 
-/**
- * TicketForm — контролируемая форма редактирования билета (доступна админу).
- * Все входы контролируются через useState. initialData — редактируемый
- * билет; родитель передаёт key={id}, чтобы форма перемонтировалась
- * и поля инициализировались данными выбранного билета.
- * Клавиша Escape отменяет редактирование.
- */
+
 export default function TicketForm({ initialData, onUpdate, onCancelEdit }) {
-  // Состояния полей формы (контролируемые компоненты),
-  // инициализируются данными редактируемого билета
   const [owner, setOwner] = useState(initialData.owner);
   const [numbersText, setNumbersText] = useState(initialData.numbers.join(', '));
   const [status, setStatus] = useState(initialData.status);
   const [prizeAmount, setPrizeAmount] = useState(String(initialData.prizeAmount));
   const [error, setError] = useState('');
 
-  // Разбор строки "3, 14, 22" в массив чисел с валидацией
   const parseNumbers = (text) => {
     const parts = text.split(/[,\s]+/).filter(Boolean);
     if (parts.length === 0 || parts.length > 6) return null;
@@ -44,7 +35,7 @@ export default function TicketForm({ initialData, onUpdate, onCancelEdit }) {
       return;
     }
 
-    // Отправляем обновлённый билет наверх (в TicketList)
+
     onUpdate({
       ...initialData,
       owner: owner.trim(),
@@ -55,16 +46,13 @@ export default function TicketForm({ initialData, onUpdate, onCancelEdit }) {
     onCancelEdit();
   };
 
-  // Обработка клавиши Escape — отмена редактирования
+
   const handleKeyDown = (event) => {
     if (event.key === 'Escape') {
       onCancelEdit();
     }
   };
 
-  // Поля заполняются данными редактируемого билета за счёт того, что
-  // TicketList монтирует форму с key={editingTicket.id} —
-  // при смене ключа компонент перемонтируется и useState переинициализируется
   return (
     <form className="ticket-form" onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
       <h2>Редактирование билета</h2>

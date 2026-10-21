@@ -4,14 +4,7 @@ import TicketItem from './TicketItem.jsx';
 import TicketList from './TicketList.jsx';
 import { useAuth } from '../hooks/useAuth.js';
 
-/**
- * Админка для роли admin.
- *
- * - В левой части: карточки всех зарегистрированных пользователей.
- * - При клике на карточку загружается список билетов этого пользователя.
- * - Правая панель показывает фильтр и сортировку того же вида, что и
- *   на странице "/", поэтому админ видит полный контекст билетов.
- */
+
 export default function AdminPanel() {
   const { currentUser } = useAuth();
   const { userId } = useParams();

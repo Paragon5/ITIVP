@@ -2,19 +2,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 
-/**
- * Форма входа / регистрации.
- *
- * Без 우발부채-сервера роль пользователя не проверяется бэком, но
- * в интерфейсе она меняется локально (кнопка «Сменить роль» в шапке).
- * Пароли хранятся в памяти и localStorage только для имитации
- * протокола; в следующих лабораторных JWT заменит это хранение.
- */
+
 export default function LoginPanel() {
   const { login, register, error, clearError, isAuthenticated, currentUser } = useAuth();
   const navigate = useNavigate();
 
-  const [mode, setMode] = useState('login'); // login | register
+  const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -32,7 +25,6 @@ export default function LoginPanel() {
   };
 
   if (isAuthenticated && currentUser) {
-    // Уже вошли — сразу в список билетов
     navigate('/', { replace: true });
     return null;
   }

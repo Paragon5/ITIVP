@@ -10,10 +10,8 @@ const PORT = 3000;
 app.use(express.json());
 
 
-// --- Аутентификация и авторизация (ЛР №3) ---
 app.use('/auth', require('./routes/auth'));
 
-// Текущий пользователь — только для авторизованных
 app.get('/profile', auth, async (req, res) => {
     const user = await User.findByPk(req.user.id);
 
@@ -28,7 +26,6 @@ app.get('/profile', auth, async (req, res) => {
     });
 });
 
-// Пример защищённого маршрута: удаление билета только авторизованными
 
 
 let statuses = ['active', 'winner', 'expired'];

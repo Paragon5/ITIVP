@@ -1,18 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 
-/**
- * Хранилище аутентификации.
- *
- * Без HTTP-сервера в рамках лабораторной невозможно проверить пароль на
- * бэкенде, поэтому вся «сессия» живёт в localStorage. Экспортируются
- *  - useAuth: получить текущего пользователя, залогиниться/выйти/зарегистрироваться;
- *  - clearAuth: удалить токен/пользователя и перенаправить на /login;
- *  - useToggleAdmin: стейт "пользователь/админ" для индикации роли в шапке и
- *    для того, чтобы админские кнопки управлялись единым источником.
- *
- * Пароли хранятся в памяти и в localStorage как строка, имитирующая JWT сессию.
- * В следующих лабораторных (№4/№5) это заменится на JWT и HTTP-only cookies.
- */
 export function useAuth() {
   const [currentUser, setCurrentUser] = useState(() => {
     try {
@@ -42,7 +29,6 @@ export function useAuth() {
         return;
       }
 
-      // Имитация JWT: в дальнейших лабораторных заменится на JWT access token.
       const token = btoa(`${email}:${password}`);
 
       const user = {
