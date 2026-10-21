@@ -1,0 +1,21 @@
+{
+  "name": "lottery-tickets-client",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "ЛР4: управление состоянием в React (useState/useEffect, localStorage). Клиентская часть БД «Лотерейные билеты»",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^6.30.6"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.6.0",
+    "vite": "^7.0.0"
+  }
+}
