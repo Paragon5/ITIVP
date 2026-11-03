@@ -266,3 +266,5 @@ button.danger:hover {
     min-width: 0;
   }
 }
+
+.pending { opacity: 0.6; }

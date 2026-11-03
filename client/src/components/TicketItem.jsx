@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 
 const STATUS_LABELS = {
   active: 'Активен',
@@ -6,11 +6,11 @@ const STATUS_LABELS = {
   expired: 'Истёк',
 };
 
-function TicketItem({ ticket, onDelete }) {
+function TicketItem({ ticket, onDelete, onEdit }) {
   const formattedDate = new Date(ticket.purchaseDate).toLocaleString('ru-RU');
 
   return (
-    <li className={`ticket-item status-${ticket.status}`}>
+    <li className={`ticket-item status-${ticket.status}${ticket._pending ? ' pending' : ''}`}>
       <div className="ticket-info">
         <span className="ticket-owner">{ticket.owner}</span>
         <span className="ticket-numbers">{ticket.numbers.join(', ')}</span>
@@ -25,6 +25,9 @@ function TicketItem({ ticket, onDelete }) {
         </span>
       </div>
       <div className="ticket-actions">
+        <button type="button" className="secondary" onClick={() => onEdit && onEdit(ticket)}>
+          Редактировать
+        </button>
         <button type="button" className="danger" onClick={() => onDelete(ticket.id)}>
           Удалить
         </button>

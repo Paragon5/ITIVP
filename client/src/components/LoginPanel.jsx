@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 
@@ -10,8 +10,15 @@ export default function LoginPanel() {
   const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [remember, setRemember] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated && currentUser) {
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, currentUser, navigate]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -20,13 +27,12 @@ export default function LoginPanel() {
     if (mode === 'login') {
       login(email, password, remember);
     } else {
-      register(email, password, name, remember);
+      register(firstName, lastName, email, password, remember);
     }
   };
 
   if (isAuthenticated && currentUser) {
-    navigate('/', { replace: true });
-    return null;
+    return <div className="login-panel"><p className="sub">Перенаправление…</p></div>;
   }
 
   return (
@@ -58,10 +64,21 @@ export default function LoginPanel() {
               Имя
               <input
                 type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ваше имя"
-                autoComplete="name"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="Иван"
+                autoComplete="given-name"
+                required
+              />
+            </label>
+            <label>
+              Фамилия
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Иванов"
+                autoComplete="family-name"
                 required
               />
             </label>
@@ -123,3 +140,4 @@ export default function LoginPanel() {
     </div>
   );
 }
+

@@ -1,24 +1,17 @@
-import { useState } from 'react';
-
-const STATUS_OPTIONS = [
-  { value: 'active', label: 'Активен' },
-  { value: 'winner', label: 'Выигрышный' },
-  { value: 'expired', label: 'Истёк' },
-];
-
+﻿import { useState } from 'react';
+import { evaluateTicket } from '../utils/prize.js';
 
 export default function TicketForm({ initialData, onUpdate, onCancelEdit }) {
   const [owner, setOwner] = useState(initialData.owner);
   const [numbersText, setNumbersText] = useState(initialData.numbers.join(', '));
-  const [status, setStatus] = useState(initialData.status);
-  const [prizeAmount, setPrizeAmount] = useState(String(initialData.prizeAmount));
   const [error, setError] = useState('');
 
   const parseNumbers = (text) => {
     const parts = text.split(/[,\s]+/).filter(Boolean);
-    if (parts.length === 0 || parts.length > 6) return null;
+    if (parts.length !== 6) return null;
     const nums = parts.map(Number);
     if (nums.some((n) => Number.isNaN(n) || n < 1 || n > 49)) return null;
+    if (new Set(nums).size !== nums.length) return null;
     return nums;
   };
 
@@ -31,21 +24,21 @@ export default function TicketForm({ initialData, onUpdate, onCancelEdit }) {
       return;
     }
     if (!numbers) {
-      setError('Числа: 1–6 чисел в диапазоне 1–49, через запятую');
+      setError('Числа: ровно 6 уникальных чисел в диапазоне 1–49, через запятую');
       return;
     }
 
+    const evaluated = evaluateTicket(numbers, initialData.purchaseDate);
 
     onUpdate({
       ...initialData,
       owner: owner.trim(),
       numbers,
-      status,
-      prizeAmount: Math.max(0, Number(prizeAmount) || 0),
+      status: evaluated.status,
+      prizeAmount: evaluated.prizeAmount,
     });
     onCancelEdit();
   };
-
 
   const handleKeyDown = (event) => {
     if (event.key === 'Escape') {
@@ -68,34 +61,12 @@ export default function TicketForm({ initialData, onUpdate, onCancelEdit }) {
       </label>
 
       <label>
-        Числа (1–6, от 1 до 49, через запятую):
+        Числа (ровно 6, от 1 до 49, через запятую):
         <input
           type="text"
           value={numbersText}
           onChange={(e) => setNumbersText(e.target.value)}
-          placeholder="3, 14, 22, 35, 41"
-        />
-      </label>
-
-      <label>
-        Статус:
-        <select value={status} onChange={(e) => setStatus(e.target.value)}>
-          {STATUS_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label>
-        Сумма приза, Br (BYN):
-        <input
-          type="number"
-          min="0"
-          step="100"
-          value={prizeAmount}
-          onChange={(e) => setPrizeAmount(e.target.value)}
+          placeholder="1, 2, 3, 4, 5, 6"
         />
       </label>
 
@@ -107,7 +78,7 @@ export default function TicketForm({ initialData, onUpdate, onCancelEdit }) {
           Отмена
         </button>
       </div>
-      <p className="form-hint">Подсказка: Escape — отменить редактирование</p>
+      <p className="form-hint">Подсказка: Escape — отменить редактирование. Статус и приз определяются автоматически по набору чисел.</p>
     </form>
   );
 }

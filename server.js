@@ -1,6 +1,8 @@
 require('dotenv').config();
 
 const express = require('express');
+const cors = require('cors');
+const { Op } = require('sequelize');
 const { Ticket, User } = require('./models');
 const auth = require('./middleware/auth');
 
@@ -8,6 +10,12 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json());
+app.use(cors({ origin: true, credentials: true }));
+
+app.get('/', async (req, res) => {
+    const tickets = await Ticket.findAll({ order: [['id', 'DESC']] });
+    res.status(200).json(tickets);
+});
 
 
 app.use('/auth', require('./routes/auth'));
@@ -68,16 +76,38 @@ function checkNumbers(numbers) {
 }
 
 
-app.get('/tickets', async (req, res) => {
+app.get('/tickets', auth, async (req, res) => {
     const status = req.query.status;
+    const search = req.query.search;
+    const limit = Math.min(parseInt(req.query.limit, 10) || 10, 100);
+    const offset = parseInt(req.query.offset, 10) || 0;
+    const isAdmin = req.user.role === 'admin';
+    const userId = req.user.id;
 
-    if (status && statuses.indexOf(status) === -1) {
+    if (status && status !== 'all' && statuses.indexOf(status) === -1) {
         return res.status(200).json([]);
     }
 
+    const whereConditions = [];
+    if (status && status !== 'all') whereConditions.push({ status: status });
+    if (!isAdmin) {
+        whereConditions.push({
+            [Op.or]: [
+                { userId: userId },
+                { owner: req.user.email }
+            ]
+        });
+    }
+    if (search && String(search).trim()) {
+        whereConditions.push({ owner: { [Op.iLike]: `%${String(search).trim()}%` } });
+    }
+    const where = whereConditions.length > 0 ? { [Op.and]: whereConditions } : {};
+
     const tickets = await Ticket.findAll({
-        where: status ? { status: status } : {},
-        order: [['id', 'ASC']]
+        where,
+        order: [['id', 'DESC']],
+        limit,
+        offset
     });
 
     res.status(200).json(tickets);
@@ -95,7 +125,7 @@ app.get('/tickets/:id', async (req, res) => {
     res.status(200).json(ticket);
 });
 
-app.post('/tickets', async (req, res) => {
+app.post('/tickets', auth, async (req, res) => {
     const body = req.body ? req.body : {};
     const owner = body.owner;
     const numbers = body.numbers;
@@ -110,6 +140,7 @@ app.post('/tickets', async (req, res) => {
 
     const ticket = await Ticket.create({
         owner: owner,
+        userId: req.user.id,
         numbers: numbers ? numbers : generateNumbers(),
         purchaseDate: new Date(),
         status: 'active',
@@ -120,17 +151,24 @@ app.post('/tickets', async (req, res) => {
 });
 
 
-app.put('/tickets/:id', async (req, res) => {
+app.put('/tickets/:id', auth, async (req, res) => {
     const id = parseInt(req.params.id);
     const body = req.body ? req.body : {};
     const owner = body.owner;
     const numbers = body.numbers;
     const status = body.status;
+    const isAdmin = req.user.role === 'admin';
+    const userId = req.user.id;
 
     const ticket = Number.isNaN(id) ? null : await Ticket.findByPk(id);
 
     if (!ticket) {
         return res.status(404).json({ error: "Билет не найден" });
+    }
+
+    // Проверка прав: админ или владелец билета
+    if (!isAdmin && ticket.userId !== userId && ticket.owner !== req.user.email) {
+        return res.status(403).json({ error: "Нет прав на редактирование этого билета" });
     }
 
     if (!owner || typeof owner !== 'string' || !numbers) {
@@ -160,9 +198,16 @@ app.put('/tickets/:id', async (req, res) => {
 app.delete('/tickets/:id', auth, async (req, res) => {
     const id = parseInt(req.params.id);
     const ticket = Number.isNaN(id) ? null : await Ticket.findByPk(id);
+    const isAdmin = req.user.role === 'admin';
+    const userId = req.user.id;
 
     if (!ticket) {
         return res.status(404).json({ error: "Билет не найден" });
+    }
+
+    // Проверка прав: админ или владелец билета
+    if (!isAdmin && ticket.userId !== userId && ticket.owner !== req.user.email) {
+        return res.status(403).json({ error: "Нет прав на удаление этого билета" });
     }
 
     await Ticket.destroy({ where: { id: id } });

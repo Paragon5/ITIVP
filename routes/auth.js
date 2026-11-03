@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');
@@ -15,12 +15,12 @@ router.post('/register', async (req, res) => {
     const password = body.password;
 
     if (!email || typeof email !== 'string' || !password || typeof password !== 'string') {
-        return res.status(400).json({ error: "Поля 'email' и 'password' обязательны и должны быть строками" });
+        return res.status(400).json({ error: "РџРѕР»СЏ 'email' Рё 'password' РѕР±СЏР·Р°С‚РµР»СЊРЅС‹ Рё РґРѕР»Р¶РЅС‹ Р±С‹С‚СЊ СЃС‚СЂРѕРєР°РјРё" });
     }
 
     const existing = await User.findOne({ where: { email: email } });
     if (existing) {
-        return res.status(409).json({ error: "Пользователь с таким email уже существует" });
+        return res.status(409).json({ error: "РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ СЃ С‚Р°РєРёРј email СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚" });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
@@ -42,19 +42,19 @@ router.post('/login', async (req, res) => {
     const password = body.password;
 
     if (!email || typeof email !== 'string' || !password || typeof password !== 'string') {
-        return res.status(400).json({ error: "Поля 'email' и 'password' обязательны и должны быть строками" });
+        return res.status(400).json({ error: "РџРѕР»СЏ 'email' Рё 'password' РѕР±СЏР·Р°С‚РµР»СЊРЅС‹ Рё РґРѕР»Р¶РЅС‹ Р±С‹С‚СЊ СЃС‚СЂРѕРєР°РјРё" });
     }
 
     const user = await User.findOne({ where: { email: email } });
     if (!user) {
-        return res.status(401).json({ error: "Неверный email или пароль" });
+        return res.status(401).json({ error: "РќРµРІРµСЂРЅС‹Р№ email РёР»Рё РїР°СЂРѕР»СЊ" });
     }
 
-    // Проверка блокировки
+    // РџСЂРѕРІРµСЂРєР° Р±Р»РѕРєРёСЂРѕРІРєРё
     if (user.lockUntil && user.lockUntil > new Date()) {
         const minutes = Math.ceil((user.lockUntil - new Date()) / 60000);
         return res.status(423).json({
-            error: `Учётная запись заблокирована после ${MAX_ATTEMPTS} неудачных попыток. Осталось ${minutes} мин.`
+            error: `РЈС‡С‘С‚РЅР°СЏ Р·Р°РїРёСЃСЊ Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅР° РїРѕСЃР»Рµ ${MAX_ATTEMPTS} РЅРµСѓРґР°С‡РЅС‹С… РїРѕРїС‹С‚РѕРє. РћСЃС‚Р°Р»РѕСЃСЊ ${minutes} РјРёРЅ.`
         });
     }
 
@@ -69,24 +69,24 @@ router.post('/login', async (req, res) => {
             update.lockUntil = new Date(Date.now() + LOCK_MINUTES * 60000);
             await user.update(update);
             return res.status(423).json({
-                error: `Превышено количество попыток. Учётная запись заблокирована на ${LOCK_MINUTES} мин.`
+                error: `РџСЂРµРІС‹С€РµРЅРѕ РєРѕР»РёС‡РµСЃС‚РІРѕ РїРѕРїС‹С‚РѕРє. РЈС‡С‘С‚РЅР°СЏ Р·Р°РїРёСЃСЊ Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅР° РЅР° ${LOCK_MINUTES} РјРёРЅ.`
             });
         }
 
         await user.update(update);
         return res.status(401).json({
-            error: "Неверный email или пароль",
+            error: "РќРµРІРµСЂРЅС‹Р№ email РёР»Рё РїР°СЂРѕР»СЊ",
             remainingAttempts: MAX_ATTEMPTS - attempts
         });
     }
 
-    // Успешный вход — сброс счётчика
+    // РЈСЃРїРµС€РЅС‹Р№ РІС…РѕРґ вЂ” СЃР±СЂРѕСЃ СЃС‡С‘С‚С‡РёРєР°
     if (user.failedLoginAttempts !== 0 || user.lockUntil) {
         await user.update({ failedLoginAttempts: 0, lockUntil: null });
     }
 
     const token = jwt.sign(
-        { id: user.id, email: user.email },
+        { id: user.id, email: user.email, role: user.role },
         process.env.JWT_SECRET,
         { expiresIn: '1h' }
     );
@@ -96,3 +96,4 @@ router.post('/login', async (req, res) => {
 
 
 module.exports = router;
+
