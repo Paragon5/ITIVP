@@ -154,7 +154,63 @@ Authorization: Bearer bad.token.here
 ### 24. Удаление билета без токена (401)
 DELETE http://localhost:3000/tickets/999
 
-### 25. Удаление билета с токеном (404 = прошёл авторизацию, билета нет)
+### 25. Удаление билета с токеном
 DELETE http://localhost:3000/tickets/999
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJ1c2VyQHRlc3QucnUiLCJpYXQiOjE3OTEzMjc5MzgsImV4cCI6MTc5MTMzMTUzOH0.6bwrKn25H-j49X3HmEnTrjX2IgZE7ykAz2rDIAAd-aw
+
+
+
+
+
+### 26
+GET http://localhost:3000/api/mongo/tickets
+
+### 27
+GET http://localhost:3000/api/mongo/tickets/6afd6ff10340d8cfddb6a9dc
+
+### 28
+POST http://localhost:3000/api/mongo/tickets
+Content-Type: application/json
+
+{
+  "owner": "Тестовый Пользователь",
+  "numbers": [1, 2, 3, 4, 5, 6],
+  "tags": ["тест", "лотерея"],
+  "payment": {
+    "status": "paid",
+    "amount": 200,
+    "date": "2026-11-18T10:00:00Z"
+  }
+}
+
+###29
+PUT http://localhost:3000/api/mongo/tickets/6afd6ff10340d8cfddb6a9dc
+Content-Type: application/json
+
+{
+  "status": "winner",
+  "prizeAmount": 5000
+}
+
+###30
+DELETE http://localhost:3000/api/mongo/tickets/6afd6ff10340d8cfddb6a9dc
+
+###31
+POST http://localhost:3000/api/mongo/tickets/6afd6ff10340d8cfddb6a9dc/reviews
+Content-Type: application/json
+
+{
+  "userId": "u2",
+  "rating": 4,
+  "comment": "Хороший билет"
+}
+
+###32
+PATCH http://localhost:3000/api/mongo/tickets/6afdbbb2955f8972b02bbec7/payment
+Content-Type: application/json
+
+{
+  "status": "paid",
+  "amount": 300
+}
 

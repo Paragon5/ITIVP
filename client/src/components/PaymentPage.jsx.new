@@ -1,0 +1,200 @@
+﻿import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams, useNavigate, Link, useParams } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth.js';
+import { purchaseTickets } from '../api.js';
+
+export default function PaymentPage() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { ticketId } = useParams();
+  const { currentUser } = useAuth();
+
+  const [paying, setPaying] = useState(false);
+  const [paid, setPaid] = useState(false);
+  const [error, setError] = useState('');
+
+  // Р•СЃР»Рё РїРµСЂРµС€Р»Рё РёР· СЃРїРёСЃРєР° Р±РёР»РµС‚РѕРІ вЂ” РїСЂРѕСЃС‚Рѕ РјРµРЅСЏРµРј СЃС‚Р°С‚СѓСЃ РЅР° РѕРїР»Р°С‡РµРЅ
+  useEffect(() => {
+    if (ticketId) {
+      fetch(`/tickets/${ticketId}/pay`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      }).then(async res => {
+        if (res.ok) {
+          setPaid(true);
+        } else {
+          setError('РћС€РёР±РєР° РѕРїР»Р°С‚С‹');
+        }
+      }).catch(err => {
+        setError('РћС€РёР±РєР° СЃРІСЏР·Рё СЃ СЃРµСЂРІРµСЂРѕРј');
+      });
+    }
+  }, [ticketId]);
+
+  const formattedDate = purchaseDate.toLocaleString('ru-RU');
+
+  if (paid) {
+    return (
+      <div className="app-wrapper">
+        <div className="payment-page">
+          <div className="payment-card">
+            <h2>РћРїР»Р°С‚Р° РїСЂРѕС€Р»Р° СѓСЃРїРµС€РЅРѕ</h2>
+            <p><strong>Р‘РёР»РµС‚ РѕРїР»Р°С‡РµРЅ</strong></p>
+            <button className="btn-secondary" onClick={() => navigate('/')}>Р’РµСЂРЅСѓС‚СЊСЃСЏ Рє Р±РёР»РµС‚Р°Рј</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // РћСЃС‚Р°Р»СЊРЅР°СЏ С„РѕСЂРјР° РїРѕРєСѓРїРєРё...
+  const count = Math.max(1, parseInt(searchParams.get('count') || '1', 10));
+  const pricePerTicket = 5;
+  const totalPrice = pricePerTicket * count;
+
+  return (
+    <div className="app-wrapper">
+      <header className="app-header">
+        <div className="logo">
+          <span className="logo-icon">рџЋ«</span>
+          <span>РћРїР»Р°С‚Р° Р±РёР»РµС‚Р°</span>
+        </div>
+        <div className="auth-area">
+          {currentUser && (
+            <>
+              <span className={`role-badge ${currentUser.role === 'admin' ? 'admin' : 'user'}`}>
+                {currentUser.role === 'admin' ? 'РђРґРјРёРЅ' : 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ'}
+              </span>
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => navigate('/', { replace: true })}
+              >
+                Рљ Р±РёР»РµС‚Р°Рј
+              </button>
+            </>
+          )}
+        </div>
+      </header>
+
+      <main className="app-main">
+        <div className="payment-page">
+          <div className="payment-card">
+            <h2>РћС„РѕСЂРјР»РµРЅРёРµ РїРѕРєСѓРїРєРё</h2>
+            <p><strong>Р’Р»Р°РґРµР»РµС†:</strong> {currentUser ? currentUser.email : 'Р“РѕСЃС‚СЊ'}</p>
+            <p><strong>РљРѕР»РёС‡РµСЃС‚РІРѕ Р±РёР»РµС‚РѕРІ:</strong> {count}</p>
+            <p><strong>Р”Р°С‚Р° РїРѕРєСѓРїРєРё:</strong> {formattedDate}</p>
+            <p><strong>Р¦РµРЅР° Р·Р° Р±РёР»РµС‚:</strong> {pricePerTicket} BYN</p>
+            <p><strong>РС‚РѕРіРѕ Рє РѕРїР»Р°С‚Рµ:</strong> {totalPrice} BYN</p>
+
+            <p><strong>РЎС‚Р°С‚СѓСЃ РѕРїР»Р°С‚С‹:</strong>
+              <span className={`badge badge-payment-${paid ? 'paid' : 'pending'}`}>
+                {paid ? 'РћРїР»Р°С‡РµРЅРѕ' : 'РќРµ РѕРїР»Р°С‡РµРЅРѕ'}
+              </span>
+            </p>
+
+            {!paid && (
+              <div className="payment-actions">
+                <button
+                  type="button"
+                  className="btn primary"
+                  onClick={handlePay}
+                  disabled={paying}
+                >
+                  {paying ? 'РћРїР»Р°С‚Р°вЂ¦' : 'РћРїР»Р°С‚РёС‚СЊ'}
+                </button>
+              </div>
+            )}
+
+            {paid && (
+              <div className="msg msg-success">
+                вњ… РћРїР»Р°С‡РµРЅРѕ. Р‘РёР»РµС‚С‹ РєСѓРїР»РµРЅС‹ Рё РґРѕР±Р°РІР»РµРЅС‹ РІ РІР°С€ СЃРїРёСЃРѕРє.
+              </div>
+            )}
+
+            {error && (
+              <div className="msg msg-error">{error}</div>
+            )}
+
+            <div className="payment-nav" style={{ marginTop: 20 }}>
+              <Link to="/" className="btn secondary">в†ђ Р’РµСЂРЅСѓС‚СЊСЃСЏ Рє СЃРїРёСЃРєСѓ Р±РёР»РµС‚РѕРІ</Link>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+    <div className="app-wrapper">
+      <header className="app-header">
+        <div className="logo">
+          <span className="logo-icon">рџЋ«</span>
+          <span>РћРїР»Р°С‚Р° Р±РёР»РµС‚Р°</span>
+        </div>
+        <div className="auth-area">
+          {currentUser && (
+            <>
+              <span className={`role-badge ${currentUser.role === 'admin' ? 'admin' : 'user'}`}>
+                {currentUser.role === 'admin' ? 'РђРґРјРёРЅ' : 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ'}
+              </span>
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => navigate('/', { replace: true })}
+              >
+                Рљ Р±РёР»РµС‚Р°Рј
+              </button>
+            </>
+          )}
+        </div>
+      </header>
+
+      <main className="app-main">
+        <div className="payment-page">
+          <div className="payment-card">
+            <h2>РћС„РѕСЂРјР»РµРЅРёРµ РїРѕРєСѓРїРєРё</h2>
+            <p><strong>Р’Р»Р°РґРµР»РµС†:</strong> {currentUser ? currentUser.email : 'Р“РѕСЃС‚СЊ'}</p>
+            <p><strong>РљРѕР»РёС‡РµСЃС‚РІРѕ Р±РёР»РµС‚РѕРІ:</strong> {count}</p>
+            <p><strong>Р”Р°С‚Р° РїРѕРєСѓРїРєРё:</strong> {formattedDate}</p>
+            <p><strong>Р¦РµРЅР° Р·Р° Р±РёР»РµС‚:</strong> {pricePerTicket} BYN</p>
+            <p><strong>РС‚РѕРіРѕ Рє РѕРїР»Р°С‚Рµ:</strong> {totalPrice} BYN</p>
+
+            <p><strong>РЎС‚Р°С‚СѓСЃ РѕРїР»Р°С‚С‹:</strong>
+              <span className={`badge badge-payment-${paid ? 'paid' : 'pending'}`}>
+                {paid ? 'РћРїР»Р°С‡РµРЅРѕ' : 'РќРµ РѕРїР»Р°С‡РµРЅРѕ'}
+              </span>
+            </p>
+
+            {!paid && (
+              <div className="payment-actions">
+                <button
+                  type="button"
+                  className="btn primary"
+                  onClick={handlePay}
+                  disabled={paying}
+                >
+                  {paying ? 'РћРїР»Р°С‚Р°вЂ¦' : 'РћРїР»Р°С‚РёС‚СЊ'}
+                </button>
+              </div>
+            )}
+
+            {paid && (
+              <div className="msg msg-success">
+                вњ… РћРїР»Р°С‡РµРЅРѕ. Р‘РёР»РµС‚С‹ РєСѓРїР»РµРЅС‹ Рё РґРѕР±Р°РІР»РµРЅС‹ РІ РІР°С€ СЃРїРёСЃРѕРє.
+              </div>
+            )}
+
+            {error && (
+              <div className="msg msg-error">{error}</div>
+            )}
+
+            <div className="payment-nav" style={{ marginTop: 20 }}>
+              <Link to="/" className="btn secondary">в†ђ Р’РµСЂРЅСѓС‚СЊСЃСЏ Рє СЃРїРёСЃРєСѓ Р±РёР»РµС‚РѕРІ</Link>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+

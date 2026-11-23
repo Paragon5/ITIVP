@@ -1,15 +1,12 @@
 ﻿import { useState, useEffect, useCallback } from 'react';
 import TicketItem from './TicketItem.jsx';
-import TicketForm from './TicketForm.jsx';
-import { generateTicket } from "../utils/randomTicket.js";
 import { evaluateTicket } from "../utils/prize.js";
 import { useAuth } from "../hooks/useAuth.js";
 import { useNavigate } from "react-router-dom";
 import {
   fetchTickets,
-  createTicket,
-  updateTicket,
   deleteTicket,
+  purchaseTickets,
 } from '../api.js';
 
 const STATUS_OPTIONS = [
@@ -25,12 +22,18 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export default function TicketList() {
-  const [tickets, setTickets] = useState([]);
+export default function TicketList({ tickets: initialTicketsProp } = {}) {
+  const providedTickets = Array.isArray(initialTicketsProp) ? initialTicketsProp : null;
+  const [tickets, setTickets] = useState(providedTickets || []);
+  const useServerMode = !providedTickets;
   const { currentUser, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState(currentUser ? currentUser.email : '');
+  const [cartQuantity, setCartQuantity] = useState(1);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,18 +42,10 @@ export default function TicketList() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [offset, setOffset] = useState(0);
-  const [editingId, setEditingId] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [editingId, setEditingId] = useState(null);
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  // Автозаполнение имени и фамилии из профиля пользователя
-  useEffect(() => {
-    if (currentUser) {
-      setFirstName(currentUser.firstName || '');
-      setLastName(currentUser.lastName || '');
-    }
-  }, [currentUser]);
-
-  // Debounce поиска
   useEffect(() => {
     const timer = setTimeout(() => setSearchQuery(searchInput), 400);
     return () => clearTimeout(timer);
@@ -85,8 +80,8 @@ export default function TicketList() {
     [filterStatus, searchQuery]
   );
 
-  // Загрузка при смене фильтров/поиска с повторными попытками
   useEffect(() => {
+    if (!useServerMode) return;
     const controller = new AbortController();
     let cancelled = false;
 
@@ -121,33 +116,43 @@ export default function TicketList() {
     loadPage(offset, false, controller.signal).catch(() => {});
   };
 
-  const handleAdd = async () => {
-    if (!firstName.trim() || !lastName.trim()) return;
-    const owner = `${firstName.trim()} ${lastName.trim()}`;
-    const ticket = generateTicket();
-    ticket.owner = owner;
-    const evaluated = evaluateTicket(ticket.numbers, ticket.purchaseDate);
-    ticket.status = evaluated.status;
-    ticket.prizeAmount = evaluated.prizeAmount;
-    const tempId = ticket.id;
+  const handleOpenCheckout = () => {
+    setFirstName(currentUser ? currentUser.firstName || '' : '');
+    setLastName(currentUser ? currentUser.lastName || '' : '');
+    setEmail(currentUser ? currentUser.email : '');
+    setIsCheckoutOpen(true);
+  };
 
-    // Оптимистичное добавление
-    setTickets((prev) => [{ ...ticket, _pending: true }, ...prev]);
-    setFirstName('');
-    setLastName('');
+  const handleCloseCheckout = () => {
+    setIsCheckoutOpen(false);
+    setCheckoutError('');
+    setError('');
+  };
 
+  const handleConfirmPurchase = async () => {
+    const owner = `${firstName.trim()} ${lastName.trim()}`.trim();
+    if (!owner) {
+      setCheckoutError('Укажите имя и фамилию');
+      return;
+    }
+    if (!email) {
+      setCheckoutError('Укажите E-mail');
+      return;
+    }
+    if (!emailRegex.test(email.trim())) {
+      setCheckoutError('Введите корректный E-mail (например, ivanov@gmail.com)');
+      return;
+    }
     try {
-      const created = await createTicket({
-        owner,
-        numbers: ticket.numbers,
-        prizeAmount: ticket.prizeAmount,
-      });
-      setTickets((prev) =>
-        prev.map((t) => (t.id === tempId ? created : t))
-      );
+      await purchaseTickets({ owner, email, quantity: cartQuantity });
+      setIsCheckoutOpen(false);
+      setCheckoutError('');
+      setFirstName('');
+      setLastName('');
+      setCartQuantity(1);
+      await loadPage(0, true, null);
     } catch (err) {
-      setTickets((prev) => prev.filter((t) => t.id !== tempId));
-      setError(err.message || 'Не удалось добавить билет');
+      setCheckoutError(err.message || 'Не удалось оформить покупку');
     }
   };
 
@@ -156,7 +161,6 @@ export default function TicketList() {
     const index = tickets.findIndex((t) => t.id === id);
     const backup = index >= 0 ? tickets[index] : null;
 
-    // Оптимистичное удаление
     setTickets((prev) => prev.filter((t) => t.id !== id));
 
     try {
@@ -210,25 +214,9 @@ export default function TicketList() {
     <div className="app">
       <header className="top-bar">
         <div className="top-left">
-          <button className="btn-create" type="button" onClick={handleAdd}>
+          <button className="btn-create" type="button" onClick={handleOpenCheckout}>
             Создать билет
           </button>
-          <input
-            className="input-name"
-            type="text"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            placeholder="Имя"
-            maxLength="30"
-          />
-          <input
-            className="input-name"
-            type="text"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            placeholder="Фамилия"
-            maxLength="30"
-          />
         </div>
         <div className="top-right">
           {currentUser ? (
@@ -325,6 +313,92 @@ export default function TicketList() {
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Поиск по владельцу"
             />
+          </div>
+        </div>
+      )}
+
+      {isCheckoutOpen && (
+        <div className="modal-overlay">
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            {checkoutError && (
+              <div className="modal-error">{checkoutError}</div>
+            )}
+            <h2>Оформление покупки</h2>
+            <div className="modal-fields">
+              <div className="modal-field">
+                <label>Имя</label>
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="Иван"
+                  required
+                />
+              </div>
+              <div className="modal-field">
+                <label>Фамилия</label>
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="Иванов"
+                  required
+                />
+              </div>
+              <div className="modal-field">
+                <label>E-mail</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="ivanov@gmail.com"
+                  required
+                />
+              </div>
+              <div className="modal-field">
+                <label>Количество билетов</label>
+                <div className="cart-qty-controls">
+                  <button
+                    type="button"
+                    className="cart-qty-btn"
+                    onClick={() => setCartQuantity((q) => Math.max(1, q - 1))}
+                  >
+                    −
+                  </button>
+                  <input
+                    className="cart-qty"
+                    type="number"
+                    min="1"
+                    value={cartQuantity}
+                    onChange={(e) => {
+                      const v = parseInt(e.target.value, 10);
+                      if (!isNaN(v) && v >= 1) setCartQuantity(v);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="cart-qty-btn"
+                    onClick={() => setCartQuantity((q) => q + 1)}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="modal-summary">
+              <p><strong>Владелец:</strong> {`${firstName} ${lastName}`.trim() || '—'}</p>
+              <p><strong>E-mail:</strong> {email || '—'}</p>
+              <p><strong>Стоимость за билет:</strong> 5 BYN</p>
+              <p><strong>Итого:</strong> {cartQuantity * 5} BYN</p>
+            </div>
+            <div className="modal-actions">
+              <button type="button" className="btn secondary" onClick={handleCloseCheckout}>
+                Отмена
+              </button>
+              <button type="button" className="btn-create" onClick={handleConfirmPurchase}>
+                Оплатить
+              </button>
+            </div>
           </div>
         </div>
       )}

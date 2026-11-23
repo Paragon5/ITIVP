@@ -20,14 +20,64 @@ export default function LoginPanel() {
     }
   }, [isAuthenticated, currentUser, navigate]);
 
+  const nameRegex = /^[А-Яа-яЁёA-Za-z]+(?:[- ]?[А-Яа-яЁёA-Za-z]+)*$/;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const validateName = (value, field) => {
+    const v = value.trim();
+    if (!v) {
+      return `Поле '${field}' обязательно`;
+    }
+    if (v.length < 2 || v.length > 30) {
+      return `Поле '${field}' должно содержать от 2 до 30 символов`;
+    }
+    if (!nameRegex.test(v)) {
+      return `Поле '${field}' может содержать только буквы, пробелы и дефис (без цифр)`;
+    }
+    return null;
+  };
+
+  const validateEmail = (value) => {
+    const v = value.trim();
+    if (!v) {
+      return 'Поле E-mail обязательно';
+    }
+    if (!emailRegex.test(v)) {
+      return 'Введите корректный E-mail';
+    }
+    return null;
+  };
+
+  const validatePassword = (value) => {
+    if (!value) {
+      return 'Поле Пароль обязательно';
+    }
+    if (value.length < 4) {
+      return 'Пароль должен содержать минимум 4 символа';
+    }
+    return null;
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     clearError();
 
     if (mode === 'login') {
-      login(email, password, remember);
+      const errEmail = validateEmail(email);
+      const errPassword = validatePassword(password);
+      if (errEmail || errPassword) {
+        setError([errEmail, errPassword].filter(Boolean).join('. '));
+        return;
+      }
+      login(email.trim(), password, remember);
     } else {
-      register(firstName, lastName, email, password, remember);
+      const errFirstName = validateName(firstName, 'Имя');
+      const errLastName = validateName(lastName, 'Фамилия');
+      if (errFirstName || errLastName) {
+        setError([errFirstName, errLastName].filter(Boolean).join('. '));
+        return;
+      }
+      register(firstName.trim(), lastName.trim(), email.trim(), password, remember);
     }
   };
 
@@ -69,6 +119,8 @@ export default function LoginPanel() {
                 placeholder="Иван"
                 autoComplete="given-name"
                 required
+                pattern="[А-Яа-яЁёA-Za-z]+(?:[- ][А-Яа-яЁёA-Za-z]+)*"
+                maxLength="30"
               />
             </label>
             <label>
@@ -80,6 +132,8 @@ export default function LoginPanel() {
                 placeholder="Иванов"
                 autoComplete="family-name"
                 required
+                pattern="[А-Яа-яЁёA-Za-z]+(?:[- ][А-Яа-яЁёA-Za-z]+)*"
+                maxLength="30"
               />
             </label>
           </>
@@ -112,7 +166,7 @@ export default function LoginPanel() {
 
         <div className="flex items-center justify-between w-full">
           {mode === 'login' && (
-            <label className="flex items-center gap-8 text-dim">
+            <label className="remember-me">
               <input
                 type="checkbox"
                 checked={remember}

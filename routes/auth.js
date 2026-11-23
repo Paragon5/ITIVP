@@ -32,7 +32,7 @@ router.post('/register', async (req, res) => {
         lockUntil: null
     });
 
-    res.status(201).json({ id: user.id, email: user.email });
+    res.status(201).json({ id: user.id, email: user.email, role: user.role });
 });
 
 
@@ -91,7 +91,7 @@ router.post('/login', async (req, res) => {
         { expiresIn: '1h' }
     );
 
-    res.status(200).json({ token: token, tokenType: "Bearer", expiresIn: "1h" });
+    res.status(200).json({ token: token, tokenType: "Bearer", expiresIn: "1h", role: user.role });
 });
 
 

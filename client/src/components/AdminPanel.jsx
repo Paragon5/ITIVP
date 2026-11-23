@@ -18,7 +18,7 @@ export default function AdminPanel() {
 
   useEffect(() => {
     try {
-      const stored = JSON.parse(localStorage.getItem('tickets_storage'));
+      const stored = JSON.parse(localStorage.getItem('lab4_tickets'));
       const all = stored || [];
       const distinctUsers = [];
       const seen = new Set();
@@ -51,7 +51,7 @@ export default function AdminPanel() {
   }, [userId]);
 
   const loadTicketsForUser = (name) => {
-    const stored = JSON.parse(localStorage.getItem('tickets_storage'));
+    const stored = JSON.parse(localStorage.getItem('lab4_tickets'));
     const all = stored || [];
     const tickets = all.filter((t) => t.owner === name);
     setUserTickets(tickets);
@@ -125,7 +125,7 @@ export default function AdminPanel() {
             ) : userTickets.length === 0 ? (
               <p className="empty">У этого пользователя пока нет билетов.</p>
             ) : (
-              <TicketList tickets={userTickets} view="admin-user" />
+              <TicketList tickets={userTickets} />
             )}
           </div>
         )}

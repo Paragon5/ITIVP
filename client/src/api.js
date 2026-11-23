@@ -39,6 +39,12 @@ export const updateTicket = (id, data) =>
 
 export const deleteTicket = (id) => api.delete(`/tickets/${id}`).then((r) => r.data);
 
+export const payTicket = (id, data = {}) =>
+  api.post(`/tickets/${id}/pay`, data).then((r) => r.data);
+
+export const purchaseTickets = ({ owner, email, quantity }) =>
+  api.post('/tickets/purchase', { owner, email, quantity }).then((r) => r.data);
+
 export const loginRequest = (email, password) =>
   api.post('/auth/login', { email, password }).then((r) => r.data);
 

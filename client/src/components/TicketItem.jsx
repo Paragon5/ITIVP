@@ -1,4 +1,6 @@
-﻿import React from 'react';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth.js';
 
 const STATUS_LABELS = {
   active: 'Активен',
@@ -6,31 +8,61 @@ const STATUS_LABELS = {
   expired: 'Истёк',
 };
 
-function TicketItem({ ticket, onDelete, onEdit }) {
+const PAYMENT_LABELS = {
+  pending: 'Ожидает оплаты',
+  paid: 'Оплачено',
+  cancelled: 'Отменён',
+};
+
+function TicketItem({ ticket, onDelete }) {
+  const { currentUser, isAdmin } = useAuth();
+  const navigate = useNavigate();
+
+  const isOwner = currentUser && (ticket.userId == currentUser.id || ticket.owner === currentUser.email);
+  const canPay = ticket.paymentStatus === 'pending' && (isAdmin || isOwner);
+
+  const handlePay = () => {
+    navigate('/payment/' + ticket.id);
+  };
+
   const formattedDate = new Date(ticket.purchaseDate).toLocaleString('ru-RU');
+  const isPaid = ticket.paymentStatus === 'paid';
 
   return (
-    <li className={`ticket-item status-${ticket.status}${ticket._pending ? ' pending' : ''}`}>
+    <li className={'ticket-item status-' + ticket.status + (ticket._pending ? ' pending' : '')}>
       <div className="ticket-info">
         <span className="ticket-owner">{ticket.owner}</span>
-        <span className="ticket-numbers">{ticket.numbers.join(', ')}</span>
+        {isPaid && (
+          <span className="ticket-numbers">{ticket.numbers.join(', ')}</span>
+        )}
         <span className="ticket-meta">
-          <span className={`badge badge-${ticket.status}`}>
-            {STATUS_LABELS[ticket.status]}
+          {isPaid && (
+            <span className={'badge badge-' + ticket.status}>
+              {STATUS_LABELS[ticket.status]}
+            </span>
+          )}
+          <span className={'badge badge-payment-' + ticket.paymentStatus}>
+            {PAYMENT_LABELS[ticket.paymentStatus]}
           </span>
           <span className="ticket-date">{formattedDate}</span>
-          <span className="ticket-prize">
-            {ticket.prizeAmount > 0 ? `Приз: ${ticket.prizeAmount.toLocaleString('ru-RU')} Br` : 'Без приза'}
-          </span>
+          {isPaid && (
+            <span className="ticket-prize">
+              {ticket.prizeAmount > 0 ? 'Приз: ' + ticket.prizeAmount.toLocaleString('ru-RU') + ' Br' : 'Без приза'}
+            </span>
+          )}
         </span>
       </div>
       <div className="ticket-actions">
-        <button type="button" className="secondary" onClick={() => onEdit && onEdit(ticket)}>
-          Редактировать
-        </button>
-        <button type="button" className="danger" onClick={() => onDelete(ticket.id)}>
-          Удалить
-        </button>
+        {canPay && (
+          <button type="button" className="secondary" onClick={handlePay}>
+            Оплатить
+          </button>
+        )}
+        {isAdmin && onDelete && (
+          <button type="button" className="danger" onClick={() => onDelete(ticket.id)}>
+            Удалить
+          </button>
+        )}
       </div>
     </li>
   );

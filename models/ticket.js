@@ -6,6 +6,7 @@ const {
 module.exports = (sequelize, DataTypes) => {
   class Ticket extends Model {
     static associate(models) {
+      Ticket.belongsTo(models.User, { foreignKey: 'userId', as: 'user' });
     }
   }
 
@@ -41,6 +42,24 @@ module.exports = (sequelize, DataTypes) => {
         const value = this.getDataValue('prizeAmount');
         return value === null || value === undefined ? 0 : Number(value);
       }
+    },
+    paymentStatus: {
+      type: DataTypes.ENUM('pending', 'paid', 'cancelled'),
+      allowNull: false,
+      defaultValue: 'pending'
+    },
+    paymentAmount: {
+      type: DataTypes.DECIMAL(12, 2),
+      allowNull: false,
+      defaultValue: 0,
+      get() {
+        const value = this.getDataValue('paymentAmount');
+        return value === null || value === undefined ? 0 : Number(value);
+      }
+    },
+    paymentDate: {
+      type: DataTypes.DATE,
+      allowNull: true
     }
   }, {
     sequelize,
